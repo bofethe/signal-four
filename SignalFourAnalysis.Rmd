@@ -1,18 +1,205 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Signal Four Analytics in Hillsborough County"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
+Prep the workspace
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*.
-
-```{r}
-plot(cars)
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+```{r}
+rm(list=ls())
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
+Import libraries
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+library(caret)
+```
+
+load the data
+
+```{r}
+data = read.csv('data/crash_event.csv', sep=',', header=T)
+head(data)
+```
+
+Add FDOT's peak period based on the crash date and time.
+
+```{r}
+data = data %>%
+  mutate(CRASH_DATE_AND_TIME = dmy_hm(CRASH_DATE_AND_TIME)) %>%
+  mutate(PEAK = as.factor(ifelse(
+              between(as.numeric(format(CRASH_DATE_AND_TIME, "%H")), 7, 9) & !(weekdays(CRASH_DATE_AND_TIME) %in% c("Saturday", "Sunday")), "AM PEAK",
+                  ifelse(
+              between(as.numeric(format(CRASH_DATE_AND_TIME, "%H")), 10, 15) & !(weekdays(CRASH_DATE_AND_TIME) %in% c("Saturday", "Sunday")), "MID PEAK",
+                    ifelse(
+              between(as.numeric(format(CRASH_DATE_AND_TIME, "%H")), 16, 18) & !(weekdays(CRASH_DATE_AND_TIME) %in% c("Saturday", "Sunday")), "PM PEAK",
+                     ifelse(
+              between(as.numeric(format(CRASH_DATE_AND_TIME, "%H")), 6, 19) & (weekdays(CRASH_DATE_AND_TIME) %in% c("Saturday", "Sunday")), "WEEKEND PEAK",
+            "OFF PEAK"
+        )))))) %>%
+
+  mutate(INCAPACITATING_FLAG = ifelse(
+    S4_CRASH_SEVERITY %in% c('Fatality', 'Serious Injury'), 1, 0))
+
+summary(data$INCAPACITATING_FLAG)
+```
+
+Filter to only relevant columns for analysis and ensure proper datatypes
+
+```{r}
+selected_columns <- c('INCAPACITATING_FLAG',
+                      'PEAK',
+                      'TOTAL_NUMBER_OF_VEHICLES',
+                      'TOTAL_NUMBER_OF_PERSONS',
+                      'RURAL_OR_URBAN',
+                      'ROAD_SYSTEM_IDENTIFER',
+                      'ROAD_SURFACE_CONDITION',
+                      'S4_CRASH_TYPE_SIMPLIFIED',
+                      'S4_DAY_OR_NIGHT',
+                      'S4_IS_AGGRESSIVE_DRIVING',
+                      'S4_IS_ALCOHOL_RELATED',
+                      'S4_IS_CMV_INVOLVED',
+                      'S4_IS_DISTRACTED',
+                      'S4_IS_DRUG_RELATED',
+                      'S4_IS_HIT_AND_RUN',
+                      'S4_IS_INTERSECTION_RELATED',
+                      'S4_IS_LANE_DEPARTURE_RELATED',
+                      'S4_IS_SPEEDING_RELATED',
+                      'S4_TRAILER_COUNT',
+                      'S4_MOTORCYCLE_COUNT',
+                      'S4_MOPED_COUNT',
+                      'S4_BICYCLIST_COUNT',
+                      'S4_AGING_DRIVER_COUNT',
+                      'S4_TEENAGER_DRIVER_COUNT',
+                      'S4_UNRESTRAINED_COUNT'
+                      )
+dataCrash = data %>%
+  select(selected_columns) %>%
+  mutate(across(c('RURAL_OR_URBAN',
+                  'ROAD_SYSTEM_IDENTIFER',
+                  'ROAD_SURFACE_CONDITION',
+                  'S4_CRASH_TYPE_SIMPLIFIED',
+                  'S4_DAY_OR_NIGHT',
+                  'S4_IS_AGGRESSIVE_DRIVING',
+                  'S4_IS_ALCOHOL_RELATED',
+                  'S4_IS_CMV_INVOLVED',
+                  'S4_IS_DISTRACTED',
+                  'S4_IS_DRUG_RELATED',
+                  'S4_IS_HIT_AND_RUN',
+                  'S4_IS_INTERSECTION_RELATED',
+                  'S4_IS_LANE_DEPARTURE_RELATED',
+                  'S4_IS_SPEEDING_RELATED'), as.factor))
+  
+  
+
+head(dataCrash)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+# Crash type plots
+ggplot(dataCrash, aes(x = S4_CRASH_TYPE_SIMPLIFIED)) +
+  geom_bar(aes(fill = factor(INCAPACITATING_FLAG, levels = c(0, 1), labels = c("No", "Yes")))) +
+  scale_fill_manual(values = c("No" = "blue", "Yes" = "red")) +
+  labs(fill = "Incapacitating Event", x = "Crash Type", y = NULL) +
+  ggtitle("Crash Severity by Type") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(subset(dataCrash, INCAPACITATING_FLAG == 1), aes(x = S4_CRASH_TYPE_SIMPLIFIED)) +
+  geom_bar(fill = "red") +
+  labs(x = "Crash Type", y = NULL) +
+  ggtitle("Incapacitating Events by Type") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Peak plots
+ggplot(dataCrash, aes(x = PEAK)) +
+  geom_bar(aes(fill = factor(INCAPACITATING_FLAG, levels = c(0, 1), labels = c("No", "Yes")))) +
+  scale_fill_manual(values = c("No" = "blue", "Yes" = "red")) +
+  labs(fill = "Incapacitating Event", x = "Period", y = NULL) +
+  ggtitle("Crash Severity by Peak Period") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(subset(dataCrash, INCAPACITATING_FLAG == 1), aes(x = PEAK)) +
+  geom_bar(fill = "red") +
+  labs(x = "Period", y = NULL) +
+  ggtitle("Incapacitating Events by Peak Period") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+Split the data into train and test data by an 90/10 split and re-sample data to balance the response
+
+```{r}
+library(ROSE)
+set.seed(123)
+train_ind <- sample(seq_len(nrow(dataCrash)), size = floor(nrow(dataCrash)*0.9))
+
+crashtrain = dataCrash[train_ind,]
+crashtest = dataCrash[-train_ind,]
+
+crashtrain_balanced = ROSE(INCAPACITATING_FLAG~., crashtrain, N=2000)$data
+summary(crashtrain_balanced$INCAPACITATING_FLAG)
+```
+
+Logistic regression - full
+
+```{r}
+modellogit = glm(INCAPACITATING_FLAG~., crashtrain_balanced, family='binomial'(link='logit'))
+summary(modellogit)
+```
+
+Logistic regression - stepwise with k=2 penalty degrees of freedom (AIC)
+
+```{r}
+logstep = step(glm(INCAPACITATING_FLAG~., data = crashtrain_balanced), trace = F)
+summary(logstep)
+
+predlogstep = ifelse(predict(logstep, crashtest[,-1], type="response" ) < 0.5, 0, 1)
+
+clog = confusionMatrix(as.factor(predlogstep), as.factor(crashtest$INCAPACITATING_FLAG))
+clog
+
+paste0('Logit stepwise testing error: ', 1-clog$overall['Accuracy'])
+```
+
+Random Forest
+
+```{r}
+library(randomForest)
+modelrf = randomForest(as.factor(INCAPACITATING_FLAG)~., crashtrain_balanced, proximity=T, importance=T)
+predrf <- predict(modelrf, crashtest)
+crf = confusionMatrix(predrf, as.factor(crashtest$INCAPACITATING_FLAG))
+crf
+
+paste0('Random Forest Test Error: ', 1-crf$overall['Accuracy'])
+```
+
+Boosting
+
+```{r}
+library(gbm)
+
+modelgbm = gbm(INCAPACITATING_FLAG~., data=crashtrain_balanced, distribution = 'bernoulli', n.trees = 5000, shrinkage = 0.01, interaction.depth = 1, cv.folds = 10)
+summary(modelgbm)
+
+## Find the estimated optimal number of iterations shown in a dashed blue line and store as a variable
+perf_gbm1 = gbm.perf(modelgbm, method="cv")
+
+## prediction
+gbmpred = ifelse(predict(modelgbm,newdata = crashtest, n.trees=perf_gbm1, type="response") < 0.5, 0, 1) 
+cgbm = confusionMatrix(as.factor(gbmpred), as.factor(crashtest$INCAPACITATING_FLAG))
+cgbm
+
+paste0('GBM Test Error: ', 1-cgbm$overall['Accuracy'])
+```
