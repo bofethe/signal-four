@@ -194,7 +194,7 @@ modelgbm = gbm(INCAPACITATING_FLAG~., data=crashtrain_balanced, distribution = '
 summary(modelgbm)
 
 ## Find the estimated optimal number of iterations shown in a dashed blue line and store as a variable
-perf_gbm1 = gbm.perf(modelgbm, method="cv")
+perf_gbm = gbm.perf(modelgbm, method="cv")
 
 ## prediction
 gbmpred = ifelse(predict(modelgbm,newdata = crashtest, n.trees=perf_gbm1, type="response") < 0.5, 0, 1) 
