@@ -8,10 +8,6 @@ output:
 
 Prep the workspace
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(eval = FALSE)
-```
-
 ```{r}
 rm(list=ls())
 ```
@@ -51,7 +47,7 @@ data = data %>%
   mutate(INCAPACITATING_FLAG = ifelse(
     S4_CRASH_SEVERITY %in% c('Fatality', 'Serious Injury'), 1, 0))
 
-summary(data$INCAPACITATING_FLAG)
+summary(as.factor(data$INCAPACITATING_FLAG))
 ```
 
 Filter to only relevant columns for analysis and ensure proper datatypes
@@ -106,7 +102,6 @@ head(dataCrash)
 ```
 
 ```{r}
-par(mfrow = c(2, 2))
 # Crash type plots
 ggplot(dataCrash, aes(x = S4_CRASH_TYPE_SIMPLIFIED)) +
   geom_bar(aes(fill = factor(INCAPACITATING_FLAG, levels = c(0, 1), labels = c("No", "Yes")))) +
@@ -135,6 +130,19 @@ ggplot(subset(dataCrash, INCAPACITATING_FLAG == 1), aes(x = PEAK)) +
   ggtitle("Incapacitating Events by Peak Period") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+# Roadway plots
+ggplot(dataCrash, aes(x = ROAD_SYSTEM_IDENTIFER)) +
+  geom_bar(aes(fill = factor(INCAPACITATING_FLAG, levels = c(0, 1), labels = c("No", "Yes")))) +
+  scale_fill_manual(values = c("No" = "blue", "Yes" = "red")) +
+  labs(fill = "Incapacitating Event", x = "Roadway", y = NULL) +
+  ggtitle("Crashes by Roadway") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(subset(dataCrash, INCAPACITATING_FLAG == 1), aes(x = ROAD_SYSTEM_IDENTIFER)) +
+  geom_bar(fill = "red") +
+  labs(x = "Roadway", y = NULL) +
+  ggtitle("Incapacitating Crashes by Roadway") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
@@ -149,7 +157,7 @@ crashtrain = dataCrash[train_ind,]
 crashtest = dataCrash[-train_ind,]
 
 crashtrain_balanced = ROSE(INCAPACITATING_FLAG~., crashtrain, N=2000)$data
-summary(crashtrain_balanced$INCAPACITATING_FLAG)
+summary(as.factor(crashtrain_balanced$INCAPACITATING_FLAG))
 ```
 
 Logistic regression - full
