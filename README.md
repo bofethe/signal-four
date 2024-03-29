@@ -1,5 +1,5 @@
 # Predictive Analysis of Crash Incidents in Hillsborough County
-This repository analyzes crash data in Hillsborough County, Florida and uses various machine learning models to predict the probablity of an incapacitating event occuring.  The training data was obtained from Signal Four Analytics and filtered to all crash events in Hillsborough County in 2023.
+This repository analyzes crash data in Hillsborough County, Florida and uses various machine learning models to predict the probablity of an incapacitating event occuring.  The training data was obtained from Signal Four Analytics and filtered to all crash events in Hillsborough County in 2023. To view this data spatially, visit the interactive map in ArcGIS Online found [here](https://experience.arcgis.com/experience/131319e3bac346e8a3054e43ba6ee53b).
 
 ## Models tested
 + **Random Forest (RF)**: An ensemble bagging model that bootstrap aggregates multiple decision trees using randomly sampled subsets of data and features to predict or classify data. Beneficial for handling large datasets with high dimensionality and complexity.
