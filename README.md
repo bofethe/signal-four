@@ -4,7 +4,7 @@ This repository analyzes crash data in Hillsborough County, Florida and uses var
 ## Models tested
 + **Random Forest (RF)**: An ensemble bagging model that bootstrap aggregates multiple decision trees using randomly sampled subsets of data and features to predict or classify data. Beneficial for handling large datasets with high dimensionality and complexity.
 + **Generalized Boosting Regression (GBM)**: An ensemble gradient boosting model that iteratively builds decision trees and trains weak learners to correct the errors of the previously models. Suitable for a wide range of supervised learning tasks when you can tolerate longer training times.
-+ **Logistic Regression (Logit)**: A probabilistic classificaDon model used for binary classification. Suitable for  scenarios when you need to understand variable relationships the probability of a particular outcome.
++ **Logistic Regression (Logit)**: A probabilistic classification model used for binary classification. Suitable for scenarios when you need to understand variable relationships the probability of a particular outcome.
 
 
 ## Requirements:
